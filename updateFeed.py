@@ -8,7 +8,7 @@ import time
 
 SITEMAP_URL = 'https://99rabbits.com/post-sitemap.xml'
 SITE_URL = 'https://99rabbits.com'
-FEED_URL = 'https://99rabbits.com'
+FEED_URL = 'https://tejonaco.github.io/feed.xml'
 IMAGE_URL = 'https://99rabbits.com/wp-content/uploads/2023/07/cropped-rabbit-labs-logo.png'
 
 HEADERS = {
@@ -74,7 +74,7 @@ for entry in getEntries():
             pub_date=entry['pubdate'],
             enclosure=enclosure
             )
-    # time.sleep(1)
+    time.sleep(0.5)
 
 xml = feed.xml(pretty=True)
 with open('feed.xml', 'w') as f:
