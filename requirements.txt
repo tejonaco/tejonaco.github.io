@@ -1,0 +1,8 @@
+#scrap
+requests
+BeautifulSoup4
+lxml
+unidecode
+
+#build xml
+genrss
