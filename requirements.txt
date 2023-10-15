@@ -3,6 +3,7 @@ requests
 BeautifulSoup4
 lxml
 unidecode
+xmltodict
 
 #build xml
 genrss

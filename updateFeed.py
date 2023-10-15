@@ -1,51 +1,22 @@
-import requests
-from bs4 import BeautifulSoup
-from datetime import datetime
-from unidecode import unidecode
 from genrss import GenRSS, Enclosure
-import time
+import xmltodict
+from scrapping import scrapEntry, getEntries
+from datetime import datetime, timezone
 
 
-SITEMAP_URL = 'https://99rabbits.com/post-sitemap.xml'
 SITE_URL = 'https://99rabbits.com'
 FEED_URL = 'https://tejonaco.github.io/feed.xml'
 IMAGE_URL = 'https://99rabbits.com/wp-content/uploads/2023/07/cropped-rabbit-labs-logo.png'
 
-HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/118.0'
-    }
 
+### READ CURRENT LOCAL FEED ###
+with open('feed.xml', 'rb') as f:
+    rssDict = xmltodict.parse(f.read())
 
+buildDate = datetime.strptime(rssDict['rss']['channel']['lastBuildDate'],
+                  '%a, %d %b %Y %H:%M:%S %Z')
 
-def scrapEntry(url):
-    r = requests.get(url, headers=HEADERS)
-    html = BeautifulSoup(r.text, 'lxml')
-
-
-    title = unidecode(html.h1.text)
-
-    #pubDate
-    pubDate_text = html.find(class_='post-date').find(class_='meta-text').text.strip()
-    pubDate = datetime.strptime(pubDate_text, '%B %d, %Y')
-
-    return title, pubDate
-
-
-def getEntries(maxEntries=None):
-    r = requests.get(SITEMAP_URL)
-    xml = BeautifulSoup(r.text, 'xml')
-
-    for i, e in enumerate(xml.findAll('url')[1:]):
-        if i == maxEntries:
-            return
-        url = e.find('loc').text
-        lastmod = e.find('lastmod').text
-        
-        if imageLoc := e.find('image:loc'):
-            image = imageLoc.text
-
-        yield {'url': url, 'lastmod': lastmod, 'image': image}
-
+oldEntries = rssDict['rss']['channel']['item']
 
 ### GENERATE FEED ###
 
@@ -56,25 +27,36 @@ feed = GenRSS(title='99 Rabbits',
               )
 
 for entry in getEntries():
-    entry['title'], entry['pubdate'] = scrapEntry(entry['url'])
+    if buildDate.timestamp() > entry['lastmod'].timestamp(): # if that entry already was here on last build
+        for oldEntry in oldEntries:
+            if entry['link'] == oldEntry['link']:
+                entry['title'], entry['pubDate'] = oldEntry['title'], oldEntry['pubDate']
+                entry['image'] = oldEntry.get('enclosure', {}).get('@url')
+                break
+
+    else: # a new entry
+        print(entry['link'])
+        entry['title'], entry['pubDate'] = scrapEntry(entry['link']) #scrap entry only if it's new
+
 
     # cover image
     if entry['image']:
         extension = entry['image'].split('.')[-1]
-        enclosure = Enclosure(
+        entry['enclosure'] = Enclosure(
             url = entry['image'],
             type = 'image/' + extension
         )
     else:
-        enclosure = None
+        entry['enclosure'] = None
+
 
     feed.item(
             title=entry['title'],
-            url=entry['url'],
-            pub_date=entry['pubdate'],
-            enclosure=enclosure
+            url=entry['link'],
+            pub_date=entry['pubDate'],
+            enclosure=entry['enclosure']
             )
-    time.sleep(0.5)
+
 
 xml = feed.xml(pretty=True)
 with open('feed.xml', 'w') as f:
