@@ -1,5 +1,5 @@
 from genrss import GenRSS, Enclosure
-import xmltodict
+import xmltodict, os
 from scrapping import scrapEntry, getEntries
 from datetime import datetime, timezone
 
@@ -10,13 +10,14 @@ IMAGE_URL = 'https://99rabbits.com/wp-content/uploads/2023/07/cropped-rabbit-lab
 
 
 ### READ CURRENT LOCAL FEED ###
-with open('feed.xml', 'rb') as f:
-    rssDict = xmltodict.parse(f.read())
+if isUpudate := os.path.isfile('feed.xml'):
+    with open('feed.xml', 'rb') as f:
+        rssDict = xmltodict.parse(f.read())
 
-buildDate = datetime.strptime(rssDict['rss']['channel']['lastBuildDate'],
-                  '%a, %d %b %Y %H:%M:%S %Z')
+    buildDate = datetime.strptime(rssDict['rss']['channel']['lastBuildDate'],
+                    '%a, %d %b %Y %H:%M:%S %Z')
 
-oldEntries = rssDict['rss']['channel']['item']
+    oldEntries = rssDict['rss']['channel']['item']
 
 ### GENERATE FEED ###
 
@@ -27,16 +28,16 @@ feed = GenRSS(title='99 Rabbits',
               )
 
 for entry in getEntries():
-    if buildDate.timestamp() > entry['lastmod'].timestamp(): # if that entry already was here on last build
+    if isUpudate and buildDate.timestamp() > entry['lastmod'].timestamp(): # if that entry already was here on last build
         for oldEntry in oldEntries:
             if entry['link'] == oldEntry['link']:
-                entry['title'], entry['pubDate'] = oldEntry['title'], oldEntry['pubDate']
+                entry['title'], entry['pubDate'], entry['categories'] = oldEntry['title'], oldEntry['pubDate'], oldEntry['categories']
                 entry['image'] = oldEntry.get('enclosure', {}).get('@url')
                 break
 
     else: # a new entry
         print(entry['link'])
-        entry['title'], entry['pubDate'] = scrapEntry(entry['link']) #scrap entry only if it's new
+        entry['title'], entry['pubDate'], entry['categories'] = scrapEntry(entry['link']) #scrap entry only if it's new
 
 
     # cover image
@@ -54,7 +55,8 @@ for entry in getEntries():
             title=entry['title'],
             url=entry['link'],
             pub_date=entry['pubDate'],
-            enclosure=entry['enclosure']
+            enclosure=entry['enclosure'],
+            categories=entry['categories'],
             )
 
 
