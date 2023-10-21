@@ -31,13 +31,13 @@ for entry in getEntries():
     if isUpudate and buildDate.timestamp() > entry['lastmod'].timestamp(): # if that entry already was here on last build
         for oldEntry in oldEntries:
             if entry['link'] == oldEntry['link']:
-                entry['title'], entry['pubDate'], entry['categories'] = oldEntry['title'], oldEntry['pubDate'], oldEntry['categories']
+                entry['title'], entry['pubDate'], entry['category'] = oldEntry['title'], oldEntry['pubDate'], oldEntry['category']
                 entry['image'] = oldEntry.get('enclosure', {}).get('@url')
                 break
 
     else: # a new entry
         print(entry['link'])
-        entry['title'], entry['pubDate'], entry['categories'] = scrapEntry(entry['link']) #scrap entry only if it's new
+        entry['title'], entry['pubDate'], entry['category'] = scrapEntry(entry['link']) #scrap entry only if it's new
 
 
     # cover image
@@ -56,7 +56,7 @@ for entry in getEntries():
             url=entry['link'],
             pub_date=entry['pubDate'],
             enclosure=entry['enclosure'],
-            categories=entry['categories'],
+            categories=[entry['category']],
             )
 
 

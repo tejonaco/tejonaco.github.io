@@ -22,7 +22,7 @@ def scrapEntry(url):
     pubDate_text = html.find(class_='post-date').find(class_='meta-text').text.strip()
     pubDate = datetime.strptime(pubDate_text, '%B %d, %Y')
 
-    category = [html.find(rel='category tag').text]
+    category = html.find(rel='category tag').text
 
     return title, pubDate, category
 
