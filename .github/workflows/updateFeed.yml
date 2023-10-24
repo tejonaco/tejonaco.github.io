@@ -3,7 +3,7 @@ on:
   schedule:
     - cron: "0 */6 * * *" #every 6 hours
   workflow_dispatch:
-    branches: [ master ]
+    branches: [ 99rabbits ]
 
 permissions:
   contents: write
