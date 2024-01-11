@@ -10,14 +10,17 @@ IMAGE_URL = 'https://99rabbits.com/wp-content/uploads/2023/07/cropped-rabbit-lab
 
 
 ### READ CURRENT LOCAL FEED ###
-if isUpudate := os.path.isfile('feed.xml'):
+if isUpdate := os.path.isfile('feed.xml'):
     with open('feed.xml', 'rb') as f:
         rssDict = xmltodict.parse(f.read())
 
     buildDate = datetime.strptime(rssDict['rss']['channel']['lastBuildDate'],
                     '%a, %d %b %Y %H:%M:%S %Z')
 
-    oldEntries = rssDict['rss']['channel']['item']
+    oldEntries = rssDict['rss']['channel'].get('item', [])
+
+    if not oldEntries:
+        isUpdate = False # read all again if reading of old entries fails
 
 ### GENERATE FEED ###
 
@@ -28,7 +31,7 @@ feed = GenRSS(title='99 Rabbits',
               )
 
 for entry in getEntries():
-    if isUpudate and buildDate.timestamp() > entry['lastmod'].timestamp(): # if that entry already was here on last build
+    if isUpdate and buildDate.timestamp() > entry['lastmod'].timestamp(): # if that entry already was here on last build
         for oldEntry in oldEntries:
             if entry['link'] == oldEntry['link']:
                 entry['title'], entry['pubDate'], entry['category'] = oldEntry['title'], oldEntry['pubDate'], oldEntry['category']
